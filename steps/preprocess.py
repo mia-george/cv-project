@@ -21,4 +21,6 @@ def preprocess(img_path):
 
     gray_img = to_gray(img)
     bf_img = bilateral_filter(img)
-    return gray_img, bf_img
+    gray_bf = cv2.cvtColor(bf_img, cv2.COLOR_BGR2GRAY)
+
+    return gray_img, bf_img, gray_bf

@@ -13,9 +13,9 @@ def main():
 
     # image = preprocess.preprocess(args.image)
     
-    gray_img, bf_img = preproc.preprocess("sample_images/boy_portrait.jpeg") # hardcoded for testing
-    
-    edges = edge_detector.canny_edge_detector(gray_img)
+    gray_img, bf_img, bf_gray = preproc.preprocess("sample_images/boy_portrait.jpeg") # hardcoded for testing
+
+    edges = edge_detector.canny_edge_detector(bf_gray)
     edge_img = (edges.astype(np.uint8)) * 255
 
     cv2.imshow("Gray Image", gray_img)
