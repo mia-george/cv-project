@@ -97,4 +97,5 @@ def canny_edge_detector(gray_img, N=5, Sigma=1.0, percentageOfNonEdge=0.90):
     T_low, T_high = FindThreshold(Mag, percentageOfNonEdge)
     Mag_nms = NonmaximaSupress(Mag, Theta)
     edges = EdgeLinking(Mag_nms, T_low, T_high)
+    edges = (edges.astype(np.uint8)) * 255
     return edges
