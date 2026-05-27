@@ -1,4 +1,5 @@
 import sys
+import os
 import argparse
 import cv2
 import steps.preprocess as preproc
@@ -53,7 +54,8 @@ def main():
     result = color_quantizer.overlay_edges(output, closed)
 
     # Save and display
-    output_path = "output.png"
+    image_name = os.path.splitext(os.path.basename(image))[0]
+    output_path = f"outputs/{image_name}_colorblock.png"
     cv2.imwrite(output_path, result)
     print(f"Output saved to {output_path}")
 
