@@ -18,6 +18,8 @@ def bilateral_filter(img):
 
 def preprocess(img_path):
     img = cv2.imread(img_path)
+    if img is None:
+        raise FileNotFoundError(f"Could not load image at path: '{img_path}'. Please check that the file path is correct.")
 
     gray_img = to_gray(img)
     bf_img = bilateral_filter(img)
