@@ -45,6 +45,68 @@ def _close_gaps(edge_map, endpoint_coords, max_gap=50000):
 
     return closed
 
+def filter_fine_edges_closing(edge_map, kernel_size=3, iterations=1):
+    """Remove concentrated edges using morphological closing.
+    
+    Dilation connects nearby edges into single features.
+    Erosion thins them back down while preserving topology.
+    """
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+    
+    # Morphological closing: dilate then erode
+    closed = cv2.morphologyEx(edge_map, cv2.MORPH_CLOSE, kernel, iterations=iterations)
+    return closed
+
+def remove_dense_components(edge_map, density_thresh=0.25, min_pixels=30):
+    # edge_map: 0/255 uint8
+    binary = (edge_map > 0).astype('uint8') * 255
+    num, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=8)
+    out = np.zeros_like(edge_map)
+    for i in range(1, num):
+        pix = int(stats[i, cv2.CC_STAT_AREA])
+        x = int(stats[i, cv2.CC_STAT_LEFT]); y = int(stats[i, cv2.CC_STAT_TOP])
+        w = int(stats[i, cv2.CC_STAT_WIDTH]); h = int(stats[i, cv2.CC_STAT_HEIGHT])
+        bbox_area = max(1, w * h)
+        density = pix / bbox_area
+        if pix >= min_pixels and density < density_thresh:
+            out[labels == i] = 255
+    return out
+
+def remove_dense_regions(edge_map, window_size=25, density_thresh=0.12):
+    binary = (edge_map > 0).astype('uint8')
+    kernel = np.ones((window_size, window_size), dtype=np.uint8)
+    local_count = cv2.filter2D(binary.astype(np.float32), -1, kernel, borderType=cv2.BORDER_REFLECT)
+    thresh_count = density_thresh * (window_size * window_size)
+    remove_mask = (local_count > thresh_count)
+    out = edge_map.copy()
+    out[remove_mask] = 0
+    return out
+
+
+def remove_dense_regions_selective(edge_map, preserve_mask, window_size=25, density_thresh=0.12):
+    """Remove dense edges everywhere EXCEPT in regions marked by preserve_mask.
+    
+    Args:
+        edge_map: Input edge image (0/255 uint8)
+        preserve_mask: Binary mask (0/255) where 255 = preserve all edges (eyes, lips)
+        window_size: Sliding window size for density calculation
+        density_thresh: Density threshold (0.0-1.0) above which to remove edges
+    """
+    binary = (edge_map > 0).astype('uint8')
+    preserve_region = (preserve_mask > 0).astype('uint8')
+    
+    kernel = np.ones((window_size, window_size), dtype=np.uint8)
+    local_count = cv2.filter2D(binary.astype(np.float32), -1, kernel, borderType=cv2.BORDER_REFLECT)
+    thresh_count = density_thresh * (window_size * window_size)
+    
+    # Remove dense edges only in non-preserved regions
+    dense_mask = (local_count > thresh_count).astype('uint8')
+    dense_and_removable = dense_mask & (1 - preserve_region)
+    
+    out = edge_map.copy()
+    out[dense_and_removable == 1] = 0
+    return out
+
 
 def close_edges(edges, max_gap=80):
     closed = edges.copy()
